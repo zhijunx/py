@@ -214,3 +214,6 @@ demo_jira/output.txt
 
 # config output
 **/jira_config.ini
+
+# config.yaml
+demo_wechat4b/config.yaml
