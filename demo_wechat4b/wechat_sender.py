@@ -1,6 +1,7 @@
 # only test wechat
 # 安装所需库
 # pip install PyYAML
+# pip install pytest
 
 # DOC REF
 # https://www.runoob.com/w3cnote/yaml-intro.html

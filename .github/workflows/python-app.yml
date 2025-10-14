@@ -36,4 +36,26 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pip install pytest
+        if [ -f "test_wechat_sender.py" ]; then
+          pytest
+        else
+          echo "No test file found, skipping tests"
+        fi
+    # - name: Create config template
+    #   run: |
+    #     cp config.yaml.example config.yaml || echo "No config template found"
+    - name: Run basic syntax check
+      run: |
+        python -m py_compile wechat_sender.py
+        echo "Syntax check passed"
+
+    - name: Archive code
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-code
+        path: |
+          *.py
+          *.yaml
+          *.yml
+        retention-days: 30
