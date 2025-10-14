@@ -1,2 +1,2 @@
 # py
-Just learning
+For learning purposes only

@@ -1,0 +1,6 @@
+1.AttributeError: 'Worksheet' object has no attribute 'set_column'
+https://stackoverflow.com/questions/63493743/attributeerror-worksheet-object-has-no-attribute-set-column
+
+
+
+
