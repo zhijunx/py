@@ -47,7 +47,7 @@ jobs:
     #     cp config.yaml.example config.yaml || echo "No config template found"
     - name: Run basic syntax check
       run: |
-        python -m py_compile wechat_sender.py
+        python -m py_compile demo_wechat4b/wechat_sender.py
         echo "Syntax check passed"
 
     - name: Archive code
