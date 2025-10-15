@@ -5,11 +5,12 @@ name: Python application
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # 每天下午 6:00
+    - cron: '20 8 * * *'  # 每天下午 6:00
   # 允许手动触发
   workflow_dispatch:
 env:
   WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
+  TZ: 'Asia/Shanghai'
 
 jobs:
   build:

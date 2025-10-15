@@ -16,6 +16,7 @@ import time
 import sys
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 def load_config(config_path: str = "demo_wechat4b/config.yaml") -> dict:
     try:
@@ -79,14 +80,24 @@ def send_wechat_message(webhook_url, msg):
         return False
 
 def main():
-    msg = f"""
-        {"定时监控报告"}
 
-        > 告警级别：info
-        > 时间：{json.dumps(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ensure_ascii=False)}
+    # 创建东八区时区
+    east8 = ZoneInfo('Asia/Shanghai')
+
+    # 获取当前东八区时间
+    now_east8 = datetime.now(east8)
+    print(f"当前东八区时间: {now_east8}")
+
+    # 格式化输出
+    formatted_time = now_east8.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+    print(f"格式化时间: {formatted_time}")
+    msg = f"""
+        {"每日早读"}
         >
-        > 详情：
-        > {"hello world"}
+        > 时间：{json.dumps(formatted_time, ensure_ascii=False)}
+        >
+        >10/16 96-98页
+        >10/17 98-100页
         """
     # 从环境变量或 secrets 获取 webhook URL
     webhook_url = os.getenv('WECHAT_WEBHOOK_URL')
