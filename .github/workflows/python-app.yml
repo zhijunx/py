@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '00 15 * * *'  # 每天下午 6:00
+    - cron: '15 7 * * *'  # 每天下午 6:00
   workflow_dispatch:
 
 env:
