@@ -7,10 +7,13 @@
 # https://www.runoob.com/w3cnote/yaml-intro.html
 # https://www.runoob.com/python3/python3-tutorial.html
 
+import os
 import requests
+import argparse
 import json
 import yaml
 import time
+import sys
 import threading
 from pathlib import Path
 from datetime import datetime
@@ -173,38 +176,71 @@ class WeChatAutoSender:
                     while self.is_paused and self.running:
                         time.sleep(1)
 
+def send_wechat_message(webhook_url, message, msg_type="text"):
+    """
+    发送企业微信消息
+
+    Args:
+        webhook_url: 企业微信机器人 webhook URL
+        message: 消息内容
+        msg_type: 消息类型 (text/markdown)
+    """
+    if msg_type == "text":
+        data = {
+            "msgtype": "text",
+            "text": {
+                "content": message
+            }
+        }
+    elif msg_type == "markdown":
+        data = {
+            "msgtype": "markdown",
+            "markdown": {
+                "content": message
+            }
+        }
+    else:
+        print(f"不支持的消息类型: {msg_type}")
+        return False
+
+    try:
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(
+            webhook_url,
+            data=json.dumps(data),
+            headers=headers,
+            timeout=10
+        )
+
+        result = response.json()
+        if result.get('errcode') == 0:
+            print("✅ 消息发送成功")
+            return True
+        else:
+            print(f"❌ 消息发送失败: {result.get('errmsg')}")
+            return False
+
+    except Exception as e:
+        print(f"❌ 请求失败: {e}")
+        return False
+
+def main():
+    parser = argparse.ArgumentParser(description='发送企业微信消息')
+    parser.add_argument('--content', type=str, required=True, help='消息内容')
+    parser.add_argument('--type', type=str, choices=['text', 'markdown'], default='text', help='消息类型')
+
+    args = parser.parse_args()
+
+    # 从环境变量或 secrets 获取 webhook URL
+    webhook_url = os.getenv('WECHAT_WEBHOOK_URL')
+    if not webhook_url:
+        print("❌ 请设置 WECHAT_WEBHOOK_URL 环境变量")
+        sys.exit(1)
+
+    success = send_wechat_message(webhook_url, args.content, args.type)
+    sys.exit(0 if success else 1)
+
+
 # 使用方法二的主函数
 if __name__ == "__main__":
-    config = load_config()
-    webhook_url = config.get('wechat_work', {}).get('webhook_url')
-
-    if webhook_url:
-        print(f"Webhook URL: {webhook_url}")
-
-        sender = WeChatAutoSender(webhook_url, 30)
-
-        # 启动用户输入处理线程
-        def input_handler():
-            while sender.running:
-                try:
-                    cmd = input().strip().lower()
-                    if cmd == 'p':
-                        sender.toggle_pause()
-                    elif cmd == 'q':
-                        sender.stop()
-                    else:
-                        print("未知命令，输入 'p' 暂停/恢复，'q' 退出")
-                except (EOFError, KeyboardInterrupt):
-                    sender.stop()
-
-        input_thread = threading.Thread(target=input_handler, daemon=True)
-        input_thread.start()
-
-        try:
-            sender.run()
-        except KeyboardInterrupt:
-            sender.stop()
-        print("程序已退出")
-    else:
-        print("未找到有效的webhook配置")
-
+    main()

@@ -43,39 +43,9 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Verify files
       run: |
-        pip install pytest
-        if [ -f "test_wechat_sender.py" ]; then
-          pytest
-        else
-          echo "No test file found, skipping tests"
-        fi
-    - name: Send push notification
-      if: github.event_name == 'push'
-      run: |
-        python wechat_sender.py \
-          --content "🚀 代码推送通知\n仓库: ${{ github.repository }}\n分支: ${{ github.ref }}\n提交者: ${{ github.actor }}\n提交信息: ${{ github.event.head_commit.message }}\n查看详情: ${{ github.event.head_commit.url }}" \
-          --type markdown
-
-    - name: Send PR notification
-      if: github.event_name == 'pull_request'
-      run: |
-        python wechat_sender.py \
-          --content "🔀 PR 通知\n仓库: ${{ github.repository }}\nPR: ${{ github.event.pull_request.title }}\n作者: ${{ github.event.pull_request.user.login }}\n状态: ${{ github.event.pull_request.state }}\n查看详情: ${{ github.event.pull_request.html_url }}" \
-          --type markdown
-
-    - name: Send release notification
-      if: github.event_name == 'release'
-      run: |
-        python wechat_sender.py \
-          --content "🎉 新版本发布\n仓库: ${{ github.repository }}\n版本: ${{ github.event.release.tag_name }}\n发布者: ${{ github.event.release.author.login }}\n发布说明: ${{ github.event.release.body }}\n下载: ${{ github.event.release.html_url }}" \
-          --type markdown
-
-    - name: Send manual notification
-      if: github.event_name == 'workflow_dispatch'
-      run: |
-        python wechat_sender.py \
-          --content "👤 手动触发通知\n仓库: ${{ github.repository }}\n触发者: ${{ github.actor }}\n消息: ${{ github.event.inputs.message }}\n工作流: ${{ github.workflow }}" \
-          --type markdown
-
+        echo "工作目录: $(pwd)"
+        ls -la
+        echo "检查 Python 文件..."
+        find . -name "*.py" | head -10
