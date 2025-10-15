@@ -8,7 +8,16 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
+  release:
+    types: [ "published" ]
+  workflow_dispatch:
+    inputs:
+      message:
+        description: '自定义消息内容'
+        required: true
+        default: '手动触发的通知'
+env:
+  WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
 permissions:
   contents: read
 
@@ -42,20 +51,31 @@ jobs:
         else
           echo "No test file found, skipping tests"
         fi
-    # - name: Create config template
-    #   run: |
-    #     cp config.yaml.example config.yaml || echo "No config template found"
-    - name: Run basic syntax check
+    - name: Send push notification
+      if: github.event_name == 'push'
       run: |
-        python -m py_compile demo_wechat4b/wechat_sender.py
-        echo "Syntax check passed"
+        python wechat_sender.py \
+          --content "🚀 代码推送通知\n仓库: ${{ github.repository }}\n分支: ${{ github.ref }}\n提交者: ${{ github.actor }}\n提交信息: ${{ github.event.head_commit.message }}\n查看详情: ${{ github.event.head_commit.url }}" \
+          --type markdown
 
-    - name: Archive code
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-code
-        path: |
-          *.py
-          *.yaml
-          *.yml
-        retention-days: 30
+    - name: Send PR notification
+      if: github.event_name == 'pull_request'
+      run: |
+        python wechat_sender.py \
+          --content "🔀 PR 通知\n仓库: ${{ github.repository }}\nPR: ${{ github.event.pull_request.title }}\n作者: ${{ github.event.pull_request.user.login }}\n状态: ${{ github.event.pull_request.state }}\n查看详情: ${{ github.event.pull_request.html_url }}" \
+          --type markdown
+
+    - name: Send release notification
+      if: github.event_name == 'release'
+      run: |
+        python wechat_sender.py \
+          --content "🎉 新版本发布\n仓库: ${{ github.repository }}\n版本: ${{ github.event.release.tag_name }}\n发布者: ${{ github.event.release.author.login }}\n发布说明: ${{ github.event.release.body }}\n下载: ${{ github.event.release.html_url }}" \
+          --type markdown
+
+    - name: Send manual notification
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        python wechat_sender.py \
+          --content "👤 手动触发通知\n仓库: ${{ github.repository }}\n触发者: ${{ github.actor }}\n消息: ${{ github.event.inputs.message }}\n工作流: ${{ github.workflow }}" \
+          --type markdown
+
