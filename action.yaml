@@ -40,7 +40,7 @@ runs:
         cache: 'pip'
     - name: Install Dependencies
       run: |
-        pip install -r requirements.txt
+        pip install -r demo_wechat4b/requirements.txt
         pip install PyYAML
         pip install requests
       shell: bash
