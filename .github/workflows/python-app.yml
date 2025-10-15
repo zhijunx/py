@@ -9,28 +9,27 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '35 14 * * *'  # 每天下午 6:00
+    - cron: '47 14 * * *'  # 每天下午 6:00
   workflow_dispatch:
 
+env:
+  WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
+
 jobs:
-  wecom-notification:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Send to WeCom
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: wecom robot action
         uses: zhijunx/py@main
         with:
-          webhook: ${{ secrets.WECHAT_WEBHOOK_URL }}
-          msgtype: text
-          content: |
-            GH提醒 🔔
-            📅 时间：xxx
-            💡 提醒：hello world！
-
-# env:
-#   WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
-# permissions:
-#   contents: read
-
+          webhook: ${{ secrets.WECHAT_WEBHOOK_URL}}
+          is_at_all: "false"
+          type: "file"
+          file_name: "test.txt"
+          file_read_type: "first"
+          file_write_type: "loop"
 # jobs:
 #   build:
 
@@ -62,6 +61,6 @@ jobs:
 #         ls -la
 #         echo "检查 Python 文件..."
 #         find . -name "*.py" | head -10
-    # - name: run wechat_sender.py
-    #   run: |
-    #     python demo_wechat4b/wechat_sender.py
+#     - name: run wechat_sender.py
+#       run: |
+#         python demo_wechat4b/wechat_sender.py
