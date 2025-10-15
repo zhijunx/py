@@ -4,63 +4,44 @@
 name: Python application
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   schedule:
     - cron: '*/5 * * * *'  # 每天下午 6:00
+  # 允许手动触发
   workflow_dispatch:
-
 env:
   WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: wecom robot action
-        uses: zhijunx/py@main
-        with:
-          webhook: ${{ secrets.WECHAT_WEBHOOK_URL}}
-          is_at_all: "false"
-          type: "file"
-          file_name: "test.txt"
-          file_read_type: "first"
-          file_write_type: "loop"
-# jobs:
-#   build:
-
-#     runs-on: ubuntu-latest
-
-#     steps:
-#     - uses: actions/checkout@v4
-#     - name: Set up Python 3.10
-#       uses: actions/setup-python@v3
-#       with:
-#         python-version: "3.10"
-#     - name: Install dependencies
-#       run: |
-#         python -m pip install --upgrade pip
-#         pip install flake8 pytest
-#         pip install pytest
-#         pip install PyYAML
-#         pip install requests
-#         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-#     - name: Lint with flake8
-#       run: |
-#         # stop the build if there are Python syntax errors or undefined names
-#         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-#         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-#         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-#     - name: Verify files
-#       run: |
-#         echo "工作目录: $(pwd)"
-#         ls -la
-#         echo "检查 Python 文件..."
-#         find . -name "*.py" | head -10
-#     - name: run wechat_sender.py
-#       run: |
-#         python demo_wechat4b/wechat_sender.py
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        pip install pytest
+        pip install PyYAML
+        pip install requests
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Verify files
+      run: |
+        echo "工作目录: $(pwd)"
+        ls -la
+        echo "检查 Python 文件..."
+        find . -name "*.py" | head -10
+    - name: run wechat_sender.py
+      run: |
+        python demo_wechat4b/wechat_sender.py
