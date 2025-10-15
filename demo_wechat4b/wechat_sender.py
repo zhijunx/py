@@ -7,33 +7,28 @@
 # https://www.runoob.com/w3cnote/yaml-intro.html
 # https://www.runoob.com/python3/python3-tutorial.html
 
-import os
+
 import requests
-import argparse
 import json
 import yaml
 import time
 import sys
-import threading
-from pathlib import Path
+import os
 from datetime import datetime
 
-def load_config(config_path: str = "config.yaml") -> dict:
-    """
-    加载配置文件
-
-    Args:
-        config_path (str): 配置文件路径
-
-    Returns:
-        dict: 配置信息
-    """
+def load_config(config_path: str = "demo_wechat4b/config.yaml") -> dict:
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
-    except FileNotFoundError:
-        print(f"配置文件 {config_path} 不存在")
-        return {}
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"配置文件不存在: {config_path}")
+        with open(config_path, 'r', encoding='utf-8') as file:
+            config = yaml.safe_load(file)
+        if config is None:
+            return {}
+        return config
+    except yaml.YAMLError as e:
+        raise yaml.YAMLError(f"YAML 解析错误: {e}")
+    except Exception as e:
+        raise Exception(f"加载配置失败: {e}")
 
 def send_wechat_alert(webhook_url: str, title: str, content: str, alert_level: str = "info") -> bool:
     """
@@ -176,7 +171,7 @@ class WeChatAutoSender:
                     while self.is_paused and self.running:
                         time.sleep(1)
 
-def send_wechat_message(webhook_url, message, msg_type="text"):
+def send_wechat_message(webhook_url, msg):
     """
     发送企业微信消息
 
@@ -185,18 +180,19 @@ def send_wechat_message(webhook_url, message, msg_type="text"):
         message: 消息内容
         msg_type: 消息类型 (text/markdown)
     """
+    msg_type = "text"
     if msg_type == "text":
         data = {
             "msgtype": "text",
             "text": {
-                "content": message
+                "content": msg
             }
         }
     elif msg_type == "markdown":
         data = {
             "msgtype": "markdown",
             "markdown": {
-                "content": message
+                "content": msg
             }
         }
     else:
@@ -225,19 +221,26 @@ def send_wechat_message(webhook_url, message, msg_type="text"):
         return False
 
 def main():
-    parser = argparse.ArgumentParser(description='发送企业微信消息')
-    parser.add_argument('--content', type=str, required=True, help='消息内容')
-    parser.add_argument('--type', type=str, choices=['text', 'markdown'], default='text', help='消息类型')
+    msg = f"""
+        ## {"定时监控报告"}
 
-    args = parser.parse_args()
-
+        > **告警级别：** info
+        > **时间：** {json.dumps(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ensure_ascii=False)}
+        >
+        > **详情：**
+        > {"hello world"}
+        """
     # 从环境变量或 secrets 获取 webhook URL
     webhook_url = os.getenv('WECHAT_WEBHOOK_URL')
-    if not webhook_url:
-        print("❌ 请设置 WECHAT_WEBHOOK_URL 环境变量")
-        sys.exit(1)
+    if webhook_url:
+        print("加载云端config")
+    else:
+        print("加载本地config")
+        config = load_config()
+        print(config.get('wechat_work', {}))
+        webhook_url = config.get('wechat_work', {}).get('webhook_url')
 
-    success = send_wechat_message(webhook_url, args.content, args.type)
+    success = send_wechat_message(webhook_url, msg)
     sys.exit(0 if success else 1)
 
 
