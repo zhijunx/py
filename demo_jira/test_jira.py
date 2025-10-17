@@ -1,4 +1,5 @@
 # only test jira
+# Python 3.13.7
 # 首先安装所需的库
 # pip install jira pandas openpyxl xlsxwriter
 
@@ -17,8 +18,6 @@ import os
 import pandas as pd
 import json
 from datetime import datetime
-import pprint
-import sys
 
 def load_config():
     config = configparser.ConfigParser()
@@ -246,23 +245,13 @@ def interactive_key_selector(data):
         else:
             # 错误处理
             print(f"\n❌ 错误：'{user_input}' 不是一个有效的序号，请重新输入。")
-    return value
 
 if __name__ == '__main__':
     print('MAIN_ENTRY')
     jira = get_jira_from_config()
     # projects = get_jira_projects(jira)
     filters = get_all_filters(jira)
-    # print(filters)
-    # print("\n--- 使用 pprint 打印（结构化） ---")
-    # pprint.pprint(filters)
     jql_query = interactive_key_selector(filters)
-
     fields = get_all_fields(jira)
-    # jql_query = (
-    #     'project IN (FERA, ER23282)\n'
-    #     'AND type = Bug\n'
-    #     'ORDER BY created DESC, updated ASC'
-    # )
     output_file = "jira_issues.xlsx"
     export_jira_to_excel(jira, jql_query, output_file)
