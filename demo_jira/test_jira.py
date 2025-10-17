@@ -186,11 +186,11 @@ if __name__ == '__main__':
     # filters = get_all_filters(jira)
     fields = get_all_fields(jira)
     jql_query = (
-        'project IN (FERA, ER23282) AND '
-        'type = Bug AND '
-        'status IN ("In Progress", Open, NEW, ReOpen, Reject, "NEED MORE INFO", "Pre-Release/临时版本待验", Checking) '
-        'ORDER BY created DESC, assignee ASC'
+        'project IN (FERA, ER23282)\n'
+        'AND type = Bug\n'
+        'AND status IN ("In Progress", Open, NEW, ReOpen, Reject, "NEED MORE INFO")\n'
+        'AND assignee IN (712020:6976685a-b8a3-41a2-9d07-749525332e25, 712020:51fdf2c1-0f3f-4c81-8c14-4c9725287805, 712020:2de3457c-ae12-484e-b8f5-0c9f2c51ce53, 712020:38a32a4e-bcab-4c67-ba0e-3ed2801be80b)\n'
+        'ORDER BY created DESC'
     )
     output_file = "jira_issues.xlsx"
     export_jira_to_excel(jira, jql_query, output_file)
-
