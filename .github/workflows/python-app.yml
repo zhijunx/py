@@ -43,6 +43,6 @@ jobs:
         ls -la
         echo "检查 Python 文件..."
         find . -name "*.py" | head -10
-    - name: run wechat_sender.py
-      run: |
-        python demo_wechat4b/wechat_sender.py
+    # - name: run wechat_sender.py
+    #   run: |
+    #     python demo_wechat4b/wechat_sender.py
