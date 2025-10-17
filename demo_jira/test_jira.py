@@ -17,6 +17,8 @@ import os
 import pandas as pd
 import json
 from datetime import datetime
+import pprint
+import sys
 
 def load_config():
     config = configparser.ConfigParser()
@@ -77,15 +79,21 @@ def get_all_filters(jira_client):
         filters = jira_client.favourite_filters()
         print("📋 所有过滤器:")
         # ID:17896 名称：23282-未修复-filter
+        # for filter_obj in filters:
+        #     if (filter_obj.name == '23282-未修复-filter'):
+        #         print(f"• ID: {filter_obj.id}")
+        #         print(f"  名称: {filter_obj.name}")
+        #         print(f"  描述: {getattr(filter_obj, 'description', '无描述')}")
+        #         print(f"  所有者: {filter_obj.owner.displayName}")
+        #         print(f"  JQL: {filter_obj.jql}")
+        #         print()
+        filters_data = {}
         for filter_obj in filters:
-            if (filter_obj.name == '23282-未修复-filter'):
-                print(f"• ID: {filter_obj.id}")
-                print(f"  名称: {filter_obj.name}")
-                print(f"  描述: {getattr(filter_obj, 'description', '无描述')}")
-                print(f"  所有者: {filter_obj.owner.displayName}")
-                print(f"  JQL: {filter_obj.jql}")
-                print()
-        return filters
+            # print(f"  名称: {filter_obj.name}")
+            # print(f"  JQL: {filter_obj.jql}")
+            # print()
+            filters_data[filter_obj.name] = filter_obj.jql
+        return filters_data
     except Exception as e:
         print(f"获取过滤器失败: {e}")
         return []
@@ -117,7 +125,7 @@ def get_all_fields(jira_client):
 def export_jira_to_excel(jira, jql_query, output_file):
     """导出JIRA数据到Excel"""
     try:
-        issues = jira.search_issues(jql_query, maxResults=1000)
+        issues = jira.search_issues(jql_query, maxResults=False)
         # 准备数据
         data = []
         # https://nothingtech.atlassian.net/browse/FERA-2119
@@ -179,18 +187,82 @@ def export_jira_to_excel(jira, jql_query, output_file):
         print(f"获取issues失败: {e}")
         return []
 
+def interactive_key_selector(data):
+    """
+    允许用户通过数字序号选择字典中的 Key 并显示对应的值。
+    """
+    keys = list(data.keys())
+
+    # 1. 展示所有可用的 Key (带数字序号)
+    print("========================================")
+    print("🔍 可供选择的数据键 (Available Keys):")
+
+    # 存储 {序号: Key} 的映射关系
+    numbered_keys = {}
+
+    # 打印 Key 列表，每行 2 个，带序号
+    for index, key in enumerate(keys):
+        number = index + 1
+        numbered_keys[str(number)] = key
+
+        # 格式化输出：每行打印两个 Key
+        if (index + 1) % 2 == 1:
+            # 打印奇数序号的 Key，并等待打印下一个 Key
+            print(f"{number:>2}. {key:<20}", end="")
+            if index == len(keys) - 1:
+                # 如果是最后一个 Key，即使是奇数也要换行
+                print()
+        else:
+            # 打印偶数序号的 Key，并换行
+            print(f"{number:>2}. {key}")
+
+    print("========================================")
+
+    while True:
+        # 2. 提示用户输入数字
+        user_input = input(
+            "\n请输入您想查询的键的序号 (例如：1, 2, 3...)：\n"
+            "（输入 'exit or q' 退出程序）\n> "
+        ).strip()
+
+        # 检查退出命令
+        if user_input.lower() == 'exit' or user_input.lower() == 'q':
+            print("程序已退出。👋")
+            return None
+
+        # 3. 检查输入是否为有效序号
+        if user_input in numbered_keys:
+            # 根据用户输入的序号，获取真实的 Key
+            selected_key = numbered_keys[user_input]
+            value = data[selected_key]
+
+            # 打印查询结果
+            print("\n----------------------------------------")
+            print(f"✅ 查询结果 (序号 {user_input}）：")
+            print(f"键 (Key):   {selected_key}")
+            print(f"值 (Value): {value} (类型: {type(value).__name__})")
+            print("----------------------------------------")
+            return value
+        else:
+            # 错误处理
+            print(f"\n❌ 错误：'{user_input}' 不是一个有效的序号，请重新输入。")
+    return value
+
 if __name__ == '__main__':
     print('MAIN_ENTRY')
     jira = get_jira_from_config()
     # projects = get_jira_projects(jira)
-    # filters = get_all_filters(jira)
+    filters = get_all_filters(jira)
+    # print(filters)
+    # print("\n--- 使用 pprint 打印（结构化） ---")
+    # pprint.pprint(filters)
+    jql_query = interactive_key_selector(filters)
+
     fields = get_all_fields(jira)
-    jql_query = (
-        'project IN (FERA, ER23282)\n'
-        'AND type = Bug\n'
-        'AND status IN ("In Progress", Open, NEW, ReOpen, Reject, "NEED MORE INFO")\n'
-        'AND assignee IN (712020:6976685a-b8a3-41a2-9d07-749525332e25, 712020:51fdf2c1-0f3f-4c81-8c14-4c9725287805, 712020:2de3457c-ae12-484e-b8f5-0c9f2c51ce53, 712020:38a32a4e-bcab-4c67-ba0e-3ed2801be80b)\n'
-        'ORDER BY created DESC'
-    )
+    # jql_query = (
+    #     'project IN (FERA, ER23282)\n'
+    #     'AND type = Bug\n'
+    #     'ORDER BY created DESC, updated ASC'
+    # )
     output_file = "jira_issues.xlsx"
     export_jira_to_excel(jira, jql_query, output_file)
