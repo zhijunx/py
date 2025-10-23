@@ -15,6 +15,8 @@ import yaml
 import os
 import sys
 import datetime
+import re
+import calendar
 from zoneinfo import ZoneInfo
 
 def load_config(config_path: str = "config.yaml") -> dict:
@@ -78,6 +80,93 @@ def send_wechat_message(webhook_url, msg):
         print(f"未知错误: {e}")
         return False
 
+def process_daily_reading_msg(msg: str):
+    """
+    解析每日早读信息。如果当天是周末，不打印任何内容。
+    如果是工作日，则过滤 msg 中所有的周六日行，并高亮当天内容。
+    """
+
+    today = datetime.date.today()
+    current_year = today.year
+    today_weekday = today.weekday()  # 0-周一 1-周二 2-周三 3-周四 4-周五 5-是周六 6-是周日
+
+    # ANSI 颜色码用于高亮 (黄色粗体)
+    WARNING_BOLD_START = '<font color="warning">**'
+    END = '**</font>'
+    print(today_weekday)
+    # --- 新增的判断逻辑：如果当前日期是周六或周日，直接返回，不打印任何内容 ---
+    if today_weekday >= 5:
+        # 实际执行时，这里不会打印任何内容。为了演示，我打印一个说明。
+        print(f"今天是 {today.strftime('%Y-%m-%d')} ({calendar.day_name[today_weekday]})，属于周末。根据要求，不打印任何内容。")
+        return ""
+
+    # 如果是工作日 (周一到周五)，则继续处理
+    print(f"今天是 {today.strftime('%Y-%m-%d')} ({calendar.day_name[today_weekday]})，是工作日，正在处理内容...")
+
+    output_lines = []
+    # --- 提取和打印头部信息 ---
+    header_lines = []
+    data_lines = []
+
+    lines = msg.strip().split('\n')
+    is_data_section = False
+
+    for line in lines:
+        stripped_line = line.strip()
+        if not stripped_line:
+            continue
+
+        if "日期 读书内容 页数" in stripped_line:
+            is_data_section = True
+            header_lines.append(stripped_line)
+            continue
+
+        if not is_data_section:
+            header_lines.append(stripped_line)
+        else:
+            data_lines.append(stripped_line)
+
+    # 打印头部
+    for line in header_lines:
+        print(f"-----{line}-----")
+    # output_lines.append(header_lines)
+    # --- 过滤并打印数据行 ---
+    today_str = today.strftime('%m月%d日').lstrip('0')
+
+    for data_line in data_lines:
+        match = re.match(r'(\d+月\d+日)\s+(.*)\s+(\d+-\d+)', data_line)
+
+        if match:
+            date_str_with_char = match.group(1)
+
+            # 构造日期对象
+            try:
+                month_day_str = date_str_with_char.replace('月', '-').replace('日', '')
+                full_date_str = f"{current_year}-{month_day_str}"
+                item_date = datetime.datetime.strptime(full_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                continue
+
+            # 过滤掉 msg 中周末的行
+            if item_date.weekday() >= 5:
+                continue
+
+            # 检查是否为今天
+            is_today = (item_date == today)
+
+            # 构建输出行
+            output_line = data_line
+
+            # 高亮今天的行
+            if is_today:
+                output_line = f"{WARNING_BOLD_START}{output_line}{END}"
+        output_lines.append(output_line)
+            # print(output_line)
+    output_lines = header_lines + output_lines
+    print(output_lines)
+    msg = '\n'.join(output_lines)
+    return msg
+
 def main():
     # 创建东八区时区
     east8 = ZoneInfo('Asia/Shanghai')
@@ -89,28 +178,6 @@ def main():
     # 格式化输出
     formatted_time = now_east8.strftime("%Y-%m-%d %H:%M:%S %Z%z")
     print(f"格式化时间: {formatted_time}")
-
-    # --- 1. 定义 ANSI 转义序列 ---
-    # 红色 (RED: \033[91m 或 \033[31m)
-    # 加粗 (BOLD: \033[1m)
-    # 结束所有格式 (END: \033[0m)
-    # RED_BOLD_START = '\033[1;91m' # 1 for BOLD, 91 for bright RED
-    # END = '\033[0m'
-    WARNING_BOLD_START = '<font color="warning">**'
-    END = '**</font>'
-
-    # 如果在 Windows 终端上遇到问题，可以尝试导入 colorama
-    # from colorama import init, Fore, Style
-    # init(autoreset=True)
-    # RED_BOLD_START = Style.BRIGHT + Fore.RED
-    # END = Style.RESET_ALL
-
-    # --- 2. 获取当前日期并格式化 ---
-    # 获取系统当前日期 (年-月-日)
-    today = datetime.date.today()
-    # 格式化为 "MM月DD日"，例如 "10月22日"
-    # %-m（或%#m在Windows上）去除月份前的0，但为了兼容性，我们手动处理
-    chinese_date_format = f"{today.month}月{today.day}日"
 
     msg = f"""
         每日早读
@@ -132,30 +199,20 @@ def main():
         11月6日 例如没有人不满和惯惯不平 128-130
         11月7日 丹尼尔·韦佰斯特是美国避免公司陷入，尴尬境地 130-131
         """
-    # --- 4. 遍历并格式化输出 ---
-    lines = msg.strip().split('\n')
-    output_lines = []
-    output_lines.append(f"       **{lines[0].strip()}**")
-    for line in lines[1:]:
-        stripped_line = line.strip()
-        if chinese_date_format in stripped_line:
-            formatted_line = f"{WARNING_BOLD_START}{line}{END}"
-        else:
-            formatted_line = line
-        output_lines.append(formatted_line)
-    final_msg = '\n'.join(output_lines)
-
-    # print(final_msg)
+    success = False
+    msg = process_daily_reading_msg(msg)
+    # print(msg)
+    if msg:
     # 从环境变量或 secrets 获取 webhook URL
-    webhook_url = os.getenv('WECHAT_WEBHOOK_URL')
-    if webhook_url:
-        print("加载云端config")
-    else:
-        print("加载本地config")
-        config = load_config()
-        print(config.get('wechat_work', {}))
-        webhook_url = config.get('wechat_work', {}).get('webhook_url')
-    success = send_wechat_message(webhook_url, final_msg)
+        webhook_url = os.getenv('WECHAT_WEBHOOK_URL')
+        if webhook_url:
+            print("加载云端config")
+        else:
+            print("加载本地config")
+            config = load_config()
+            print(config.get('wechat_work', {}))
+            webhook_url = config.get('wechat_work', {}).get('webhook_url')
+        success = send_wechat_message(webhook_url, msg)
     sys.exit(0 if success else 1)
 
 # 使用方法二的主函数
