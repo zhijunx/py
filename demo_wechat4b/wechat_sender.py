@@ -8,7 +8,6 @@
 # https://www.runoob.com/w3cnote/yaml-intro.html
 # https://www.runoob.com/python3/python3-tutorial.html
 
-
 import requests
 import json
 import yaml
@@ -85,60 +84,46 @@ def process_daily_reading_msg(msg: str):
     解析每日早读信息。如果当天是周末，不打印任何内容。
     如果是工作日，则过滤 msg 中所有的周六日行，并高亮当天内容。
     """
-
     today = datetime.date.today()
     current_year = today.year
     today_weekday = today.weekday()  # 0-周一 1-周二 2-周三 3-周四 4-周五 5-是周六 6-是周日
 
-    # ANSI 颜色码用于高亮 (黄色粗体)
+    # md 格式高亮
     WARNING_BOLD_START = '<font color="warning">**'
     END = '**</font>'
-    print(today_weekday)
+
     # --- 新增的判断逻辑：如果当前日期是周六或周日，直接返回，不打印任何内容 ---
     if today_weekday >= 5:
-        # 实际执行时，这里不会打印任何内容。为了演示，我打印一个说明。
         print(f"今天是 {today.strftime('%Y-%m-%d')} ({calendar.day_name[today_weekday]})，属于周末。根据要求，不打印任何内容。")
         return ""
-
-    # 如果是工作日 (周一到周五)，则继续处理
     print(f"今天是 {today.strftime('%Y-%m-%d')} ({calendar.day_name[today_weekday]})，是工作日，正在处理内容...")
 
     output_lines = []
-    # --- 提取和打印头部信息 ---
     header_lines = []
     data_lines = []
 
     lines = msg.strip().split('\n')
     is_data_section = False
-
     for line in lines:
         stripped_line = line.strip()
         if not stripped_line:
             continue
-
         if "日期 读书内容 页数" in stripped_line:
             is_data_section = True
             header_lines.append(stripped_line)
             continue
-
         if not is_data_section:
             header_lines.append(stripped_line)
         else:
             data_lines.append(stripped_line)
-
     # 打印头部
-    for line in header_lines:
-        print(f"-----{line}-----")
-    # output_lines.append(header_lines)
-    # --- 过滤并打印数据行 ---
-    today_str = today.strftime('%m月%d日').lstrip('0')
+    # for line in header_lines:
+    #     print(f"-----{line}-----")
 
     for data_line in data_lines:
         match = re.match(r'(\d+月\d+日)\s+(.*)\s+(\d+-\d+)', data_line)
-
         if match:
             date_str_with_char = match.group(1)
-
             # 构造日期对象
             try:
                 month_day_str = date_str_with_char.replace('月', '-').replace('日', '')
@@ -146,17 +131,13 @@ def process_daily_reading_msg(msg: str):
                 item_date = datetime.datetime.strptime(full_date_str, '%Y-%m-%d').date()
             except ValueError:
                 continue
-
             # 过滤掉 msg 中周末的行
             if item_date.weekday() >= 5:
                 continue
-
             # 检查是否为今天
             is_today = (item_date == today)
-
             # 构建输出行
             output_line = data_line
-
             # 高亮今天的行
             if is_today:
                 output_line = f"{WARNING_BOLD_START}{output_line}{END}"
@@ -203,8 +184,7 @@ def main():
     msg = process_daily_reading_msg(msg)
     # print(msg)
     if msg:
-    # 从环境变量或 secrets 获取 webhook URL
-        webhook_url = os.getenv('WECHAT_WEBHOOK_URL')
+        webhook_url = os.getenv('WECHAT_WEBHOOK_URL') # 从环境变量或 secrets 获取 webhook URL
         if webhook_url:
             print("加载云端config")
         else:
