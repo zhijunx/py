@@ -1,4 +1,3 @@
-
 # only test wechat
 # 安装所需库
 # pip install PyYAML

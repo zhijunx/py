@@ -1,4 +1,3 @@
-
 # only test wechat
 # 安装所需库
 # pip install PyYAML
@@ -114,6 +113,7 @@ def process_daily_reading_msg(msg: str, today: datetime.date) -> str:
     is_data_section = False
     header_lines = []
     output_lines = []
+    found_today = False  # 新增：标记是否找到当天日期
 
     for line in lines:
         if "日期 读书内容 页数" in line:
@@ -145,8 +145,17 @@ def process_daily_reading_msg(msg: str, today: datetime.date) -> str:
             continue
 
         # Highlight today's line
-        output_line = f"{WARNING_BOLD_START}{line}{END}" if item_date == today else line
+        if item_date == today:
+            output_line = f"{WARNING_BOLD_START}{line}{END}"
+            found_today = True  # 找到当天日期
+        else:
+            output_line = line
         output_lines.append(output_line)
+
+    # 新增：如果没有找到当天日期，返回空字符串
+    if not found_today:
+        print(f"未找到当日 {today.strftime('%Y-%m-%d')} 的阅读内容，返回空值。")
+        return ""
 
     # Combine and return
     return '\n'.join(header_lines + output_lines)
@@ -171,21 +180,21 @@ def main():
         每日早读
         时间：{json.dumps(formatted_time, ensure_ascii=False)}
         日期 读书内容 页数
-        11月10日 班上另外一名学员 温和友善，宽以待人 132-133
-        11月11日 5.循循善诱 让他乐于接受我的建议 134-135
-        11月12日 约瑟夫·艾利森是 成了这家店的常客 136-137
-        11月13日 苏格拉底是世界上 最大的一笔订单 138-139
-        11月14日 我知道，如果我没有失声 在课上分享时说， 140-141
-        11月17日 终于有一天 以免招致猴妒与恨 142-143
-        11月18日 提出建议进行引导 也该听听我的想法了， 144-146
-        11月19日 到的 146-148
-        11月20日 8.换位思考 方便的时候补上就可以了， 149-150
-        11月21日 下次，当你想让别人 好好和她说说 151-153
-        11月24日 但事实上很抱款写信斥责我 153-154
-        11月25日 如果你遇到下面这样的困境 感同身受 155-156
-        11月26日 让对方深信缠的人那里要到账 157-158
-        11月27日 你的怀疑很合理诚实正直的好人 159-160
-        11月28日 用戏剧化的方式，但很难对付 161-162
+        12月1日 博因顿的第一次一一工人的于劲越来越足 163-164
+        12月2日 很快；这个原本生产一一原则12用激将法提出挑战 165-167
+        12月3日 在批评和否定之前一一消除军中的质疑和不满 169-170
+        12月4日 如果拿破仑还活着一一在批评和否定之前 171-173
+        12月5日 慎用“但是”一一巧妙地暗示对方的错误 174-175
+        12月8日 谦虚谨慎一一先承认自己也会犯错 176-178
+        12月9日 用提问的方式一一找到解决问题的方法 179-180
+        12月10日 给下属留足面子一一原则5 181-182
+        12月11日 即使是下属最微小的进步一一正在考虑解雇他 183-184
+        12月12日 罗珀先生得知一一原则6 185-186
+        12月15日 找到下属身上的闪光点一一维护自己的名誉 187-188
+        12月16日 马丁·菲茨休来自爱尔兰都一一绝对不可能 189-190
+        12月17日 “为什么，戴尔一一原则8 191-193
+        12月18日 授予头衔和权力一一肯定有很多精彩的故事可以分享 194-196
+        12月19日 冈特·施密特曾是我们一一激发下属的主动性 196-197
         """
 
     # Process message (passing today to avoid recalculation)
